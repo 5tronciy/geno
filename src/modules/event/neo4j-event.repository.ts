@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Node } from 'neo4j-driver';
 import { Event } from './domain/event';
 import { eventMapper } from './event.mapper';
 import { EventRepository } from './event.repository';
 import { Neo4jService } from '../database/neo4j.service';
+import { extensionMapper } from '../extension/extension.mapper';
 
 @Injectable()
 export class Neo4jEventRepository implements EventRepository {
@@ -10,11 +12,17 @@ export class Neo4jEventRepository implements EventRepository {
 
   async getById(id: string): Promise<Event | null> {
     return await this.neo4j.readOne(
-      'MATCH (e:Event {id:$id}) RETURN e',
+      `MATCH (e:Event {id: $id})
+       OPTIONAL MATCH (e)-[:HAS_EXTENSION]->(ext:Extension)
+       RETURN e, collect(ext) AS extensions`,
       { id },
       (record) => {
         const node = this.neo4j.getNode(record, 'e');
-        return eventMapper.toDomain(node);
+        const extensions = record.get('extensions') as Node[];
+        return {
+          ...eventMapper.toDomain(node),
+          extensions: extensions.map((e) => extensionMapper.toDomain(e)),
+        };
       },
     );
   }
@@ -24,7 +32,7 @@ export class Neo4jEventRepository implements EventRepository {
       `MERGE (e:Event {id:$id})
        SET e.type=$type,
            e.date=$date,
-           e.place=$place,
+           e.placeId=$placeId,
            e.participants=$participants,
            e.sourceIds=$sourceIds`,
       eventMapper.toPersistence(event),

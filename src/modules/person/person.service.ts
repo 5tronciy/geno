@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PersonRepository } from './person.repository';
 import { Person } from './domain/person';
-import { Extension } from '../extension/domain/extension';
 import { ExtensionService } from '../extension/extension.service';
 
 @Injectable()
@@ -27,9 +26,5 @@ export class PersonService {
     }
 
     await this.repo.save(person);
-  }
-
-  addExtension(personId: string, ext: Extension) {
-    return this.extensions.addToNode('Person', personId, ext);
   }
 }

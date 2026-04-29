@@ -1,9 +1,9 @@
 import { Node } from 'neo4j-driver';
-import { Event } from './domain/event';
+import { EventBase } from './domain/event';
 import { isStringArray } from 'src/utils/isStringArray';
 
 export const eventMapper = {
-  toDomain(node: Node): Event {
+  toDomain(node: Node): EventBase {
     const props = node.properties as Record<string, unknown>;
 
     if (typeof props.id !== 'string' || typeof props.type !== 'string') {
@@ -20,7 +20,7 @@ export const eventMapper = {
     };
   },
 
-  toPersistence(event: Event) {
+  toPersistence(event: EventBase) {
     return {
       id: event.id,
       type: event.type,

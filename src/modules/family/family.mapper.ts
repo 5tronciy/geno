@@ -1,9 +1,9 @@
 import { Node } from 'neo4j-driver';
 import { isStringArray } from 'src/utils/isStringArray';
-import { Family } from './domain/family';
+import { FamilyBase } from './domain/family';
 
 export const familyMapper = {
-  toDomain(node: Node): Family {
+  toDomain(node: Node): FamilyBase {
     const props = node.properties as Record<string, unknown>;
 
     if (
@@ -16,16 +16,18 @@ export const familyMapper = {
 
     return {
       id: props.id,
-      parents: isStringArray(props.parents) ? props.parents : [],
-      children: isStringArray(props.children) ? props.parents : [],
+      parents: props.parents,
+      children: props.children,
+      eventIds: isStringArray(props.eventIds) ? props.eventIds : [],
     };
   },
 
-  toPersistence(family: Family) {
+  toPersistence(family: FamilyBase) {
     return {
       id: family.id,
       parents: family.parents,
       children: family.children,
+      eventIds: family.eventIds ?? [],
     };
   },
 };

@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Node } from 'neo4j-driver';
 import { Source } from './domain/source';
 import { sourceMapper } from './source.mapper';
 import { SourceRepository } from './source.repository';
 import { Neo4jService } from '../database/neo4j.service';
+import { extensionMapper } from '../extension/extension.mapper';
 
 @Injectable()
 export class Neo4jSourceRepository implements SourceRepository {
@@ -10,11 +12,17 @@ export class Neo4jSourceRepository implements SourceRepository {
 
   async getById(id: string): Promise<Source | null> {
     return await this.neo4j.readOne(
-      'MATCH (s:Source {id:$id}) RETURN s',
+      `MATCH (s:Source {id: $id})
+       OPTIONAL MATCH (s)-[:HAS_EXTENSION]->(ext:Extension)
+       RETURN s, collect(ext) AS extensions`,
       { id },
       (record) => {
         const node = this.neo4j.getNode(record, 's');
-        return sourceMapper.toDomain(node);
+        const extensions = record.get('extensions') as Node[];
+        return {
+          ...sourceMapper.toDomain(node),
+          extensions: extensions.map((e) => extensionMapper.toDomain(e)),
+        };
       },
     );
   }
